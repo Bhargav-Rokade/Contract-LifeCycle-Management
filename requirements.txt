@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+aiosqlite
+python-jose[cryptography]
+bcrypt
+gitpython
+pypandoc
+pymupdf
+openai
+faiss-cpu
+numpy
+python-multipart
+pydantic-settings
+python-dotenv
