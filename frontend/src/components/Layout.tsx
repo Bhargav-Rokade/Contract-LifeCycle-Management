@@ -20,8 +20,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="app-shell">
       <nav className="sidebar">
         <div className="sidebar-logo">
-          <div className="sidebar-logo-text">ContractIQ</div>
-          <div className="sidebar-logo-sub">Intelligence Platform</div>
+          <div className="sidebar-logo-text">Contract Intelligence Platform</div>
         </div>
 
         <div className="sidebar-section">

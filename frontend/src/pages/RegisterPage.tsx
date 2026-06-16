@@ -24,7 +24,7 @@ export function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-left">
-        <div className="auth-brand">ContractIQ</div>
+        <div className="auth-brand">Contract Intelligence Platform</div>
         <div>
           <div className="auth-tagline">A shared environment for contract negotiation.</div>
           <p className="auth-tagline-sub">
