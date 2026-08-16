@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { Footer } from './Footer';
 
 const NAV = [
-  { to: '/dashboard', label: 'Negotiations', icon: '⇌' },
+  { to: '/negotiations', label: 'Negotiations', icon: '⇌' },
   { to: '/settings/kb', label: 'Knowledge Base', icon: '⊞' },
 ];
 
@@ -21,7 +21,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="app-shell">
       <nav className="sidebar">
         <div className="sidebar-logo">
-          <a href="/dashboard">
+          <a href="/negotiations">
             <div className="sidebar-logo-text">Contract Intelligence Platform</div>
           </a>
         </div>

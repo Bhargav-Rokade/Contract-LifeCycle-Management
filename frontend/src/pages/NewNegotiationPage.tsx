@@ -130,7 +130,7 @@ export function NewNegotiationPage() {
                 <button id="create-neg-submit" className="btn btn-primary" type="submit" disabled={submitting || !selected}>
                   {submitting ? <span className="loading-spinner" /> : 'Create Negotiation'}
                 </button>
-                <button type="button" className="btn btn-outline" onClick={() => navigate('/dashboard')}>
+                <button type="button" className="btn btn-outline" onClick={() => navigate('/negotiations')}>
                   Cancel
                 </button>
               </div>

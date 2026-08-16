@@ -20,7 +20,7 @@ export function LoginPage() {
     setError('');
     try {
       await login(handle, password);
-      navigate('/dashboard');
+      navigate('/negotiations');
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? 'Login failed. Check your credentials.');
     }

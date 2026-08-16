@@ -62,7 +62,6 @@ export function DashboardPage() {
                   <th>Party A</th>
                   <th>Party B</th>
                   <th>Created</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -80,14 +79,6 @@ export function DashboardPage() {
                       <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-3)' }}>{deck.company_b.display_name}</div>
                     </td>
                     <td className="text-muted text-sm">{formatDate(deck.created_at)}</td>
-                    <td>
-                      <button
-                        className="btn btn-outline btn-sm"
-                        onClick={(e) => { e.stopPropagation(); navigate(`/negotiations/${deck.id}`); }}
-                      >
-                        Open →
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>

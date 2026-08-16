@@ -21,7 +21,7 @@ export function RegisterPage() {
     setError('');
     try {
       await register(handle, displayName, password);
-      navigate('/dashboard');
+      navigate('/negotiations');
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? 'Registration failed.');
     }

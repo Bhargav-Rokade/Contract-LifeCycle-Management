@@ -17,7 +17,7 @@ export function AuthLeft({
         <p className="auth-tagline-sub">{taglineSub}</p>
       </div>
       <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.05em' }}>
-        DEMONSTRATION PRODUCT · NOT FOR PRODUCTION USE
+        PROTOTYPE · NOT FOR PRODUCTION USE
       </div>
     </div>
   );
