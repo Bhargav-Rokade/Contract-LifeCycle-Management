@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { Footer } from './Footer';
 
 const NAV = [
   { to: '/dashboard', label: 'Negotiations', icon: '⇌' },
@@ -51,7 +52,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </nav>
 
       <main className="main-content">
-        {children}
+        <div style={{ flex: 1 }}>
+          {children}
+        </div>
+        <Footer />
       </main>
     </div>
   );

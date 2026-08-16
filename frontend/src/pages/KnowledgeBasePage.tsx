@@ -26,7 +26,10 @@ export function KnowledgeBasePage() {
     }).catch(() => setLoading(false));
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    document.title = 'Knowledge Base - Contract Manager App';
+    fetchAll();
+  }, []);
 
   const handleUpload = async (file: File) => {
     setUploading(true);

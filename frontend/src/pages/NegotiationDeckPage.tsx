@@ -48,8 +48,15 @@ export function NegotiationDeckPage() {
   };
 
   useEffect(() => {
+    document.title = 'Negotiation Deck - Contract Manager App';
+  }, []);
+
+  useEffect(() => {
     if (!deckId) return;
-    negotiationsApi.get(deckId).then(res => setDeck(res.data));
+    negotiationsApi.get(deckId).then(res => {
+      setDeck(res.data);
+      document.title = `Negotiation Deck: ${res.data.title} - Contract Manager App`;
+    });
     fetchRevisions();
   }, [deckId]);
 

@@ -16,6 +16,10 @@ export function NewNegotiationPage() {
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    document.title = 'New Negotiation - Contract Manager App';
+  }, []);
+
+  useEffect(() => {
     if (!searchQuery.trim() || selected) {
       setResults([]);
       return;

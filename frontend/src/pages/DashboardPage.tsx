@@ -16,6 +16,7 @@ export function DashboardPage() {
   const { company } = useAuthStore();
 
   useEffect(() => {
+    document.title = 'Negotiations Dashboard - Contract Manager App';
     negotiationsApi.list().then(res => {
       setDecks(res.data);
       setLoading(false);
