@@ -1,9 +1,9 @@
 import type { ComplianceFinding } from '../types';
 
 const BADGE_MAP: Record<string, { label: string; cls: string }> = {
-  potential_conflict:         { label: 'Potential Conflict',   cls: 'badge-conflict' },
-  policy_alignment:           { label: 'Policy Alignment',     cls: 'badge-aligned'  },
-  manual_review_recommended:  { label: 'Manual Review',        cls: 'badge-manual'   },
+  potential_conflict: { label: 'Potential Conflict', cls: 'badge-conflict' },
+  policy_alignment: { label: 'Policy Alignment', cls: 'badge-aligned' },
+  manual_review_recommended: { label: 'Manual Review', cls: 'badge-manual' },
 };
 
 export function ComplianceFindingCard({ finding }: { finding: ComplianceFinding }) {
@@ -25,7 +25,7 @@ export function ComplianceFindingCard({ finding }: { finding: ComplianceFinding 
         <p className="finding-summary">{finding.summary}</p>
 
         <div className="finding-policy-reference">
-          <div className="finding-policy-ref-label">Policy Reference — {finding.policy_reference}</div>
+          <div className="finding-policy-ref-label">Policy Reference : {finding.policy_reference}</div>
           <div className="finding-policy-excerpt">{finding.policy_excerpt}</div>
         </div>
       </div>

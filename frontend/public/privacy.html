@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Contract Management App</title>
+    <style>
+        body {
+            font-family: 'Figtree', sans-serif;
+            background-color: #f5f3f0;
+            color: #1a1814;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        h1,
+        h2 {
+            font-family: 'Syne', sans-serif;
+            color: #2c5f2e;
+        }
+
+        .container {
+            background-color: #ffffff;
+            border: 1px solid #d2cdc6;
+            border-radius: 5px;
+            padding: 40px;
+            box-shadow: 0 1px 2px rgba(26, 24, 20, 0.06);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2c5f2e;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="/" class="back-link">&larr; Back to App</a>
+    <div class="container">
+        <h1>Privacy Policy</h1>
+        <p>Last updated: August 16, 2026</p>
+
+        <h2>1. Local-First Data Commitment</h2>
+        <p>This platform is designed as a local-first application. All data generated, processed, or uploaded through
+            this platform, including uploaded contract drafts (.docx, .pdf), converted markdown files, metadata database
+            tables (SQLite), and vector store files are stored strictly on your local computer's storage drive.</p>
+
+        <h2>2. Data Transmission</h2>
+        <p>We do not transmit your uploaded documents, company logs, or user credentials to any external servers, except
+            for:</p>
+        <ul>
+            <li><strong>OpenAI API:</strong> Contract clauses and relevant policy segments are sent to OpenAI servers to
+                retrieve vector embeddings (via <code>text-embedding-3-large</code>) and to perform compliance checks
+                (via <code>gpt-5-nano</code>). Please consult OpenAI's privacy policy regarding data retention policies
+                for API invocations.</li>
+        </ul>
+
+        <h2>3. Third-Party Services</h2>
+        <p>This application does not load tracking pixels, advertising scripts, or third-party cookies. It functions as
+            a secure utility for contract reviews.</p>
+
+        <h2>4. Contact</h2>
+        <p>For questions regarding this local application, please refer to the project's repository developed by Bhargav
+            Rokade.</p>
+    </div>
+</body>
+
+</html>
