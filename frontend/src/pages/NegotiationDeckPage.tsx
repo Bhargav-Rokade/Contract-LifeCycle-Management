@@ -350,12 +350,12 @@ export function NegotiationDeckPage() {
                   <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', paddingRight: '16px' }}>
                     <button
                       id="run-compliance-btn"
-                      className="btn btn-outline btn-sm"
+                      className="btn btn-primary btn-sm"
                       onClick={handleRunCompliance}
                       disabled={runningCompliance}
                       style={{ fontSize: '0.78rem' }}
                     >
-                      {runningCompliance ? <><span className="loading-spinner loading-spinner-dark" /> Analysing…</> : '⊕ Run Compliance Review'}
+                      {runningCompliance ? <><span className="loading-spinner loading-spinner-dark" /> Analysing…</> : 'Run Compliance Review'}
                     </button>
                   </div>
                 </div>

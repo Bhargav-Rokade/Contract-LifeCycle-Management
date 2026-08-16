@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Footer } from '../components/Footer';
+import { AuthLeft } from '../components/AuthLeft';
 
 export function RegisterPage() {
   const { register, isLoading } = useAuthStore();
@@ -28,18 +29,10 @@ export function RegisterPage() {
 
   return (
     <div className="auth-page">
-      <div className="auth-left">
-        <div className="auth-brand">Contract Intelligence Platform</div>
-        <div>
-          <div className="auth-tagline">A shared environment for contract negotiation.</div>
-          <p className="auth-tagline-sub">
-            Register your organisation to upload policy documents, initiate negotiations, and evaluate contractual revisions against internal compliance policies.
-          </p>
-        </div>
-        <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.05em' }}>
-          DEMONSTRATION PRODUCT · NOT FOR PRODUCTION USE
-        </div>
-      </div>
+      <AuthLeft
+        tagline="A shared environment for contract negotiation."
+        taglineSub="Register your organisation to upload policy documents, initiate negotiations, and evaluate contractual revisions against internal compliance policies."
+      />
 
       <div className="auth-right" style={{ flexDirection: 'column', padding: 0, display: 'flex', height: '100vh', justifyContent: 'space-between' }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>

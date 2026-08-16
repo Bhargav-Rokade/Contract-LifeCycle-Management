@@ -21,7 +21,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="app-shell">
       <nav className="sidebar">
         <div className="sidebar-logo">
-          <div className="sidebar-logo-text">Contract Intelligence Platform</div>
+          <a href="/dashboard">
+            <div className="sidebar-logo-text">Contract Intelligence Platform</div>
+          </a>
         </div>
 
         <div className="sidebar-section">

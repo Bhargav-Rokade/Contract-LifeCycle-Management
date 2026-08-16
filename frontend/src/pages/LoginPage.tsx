@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Footer } from '../components/Footer';
+import { AuthLeft } from '../components/AuthLeft';
 
 export function LoginPage() {
   const { login, isLoading } = useAuthStore();
@@ -27,18 +28,7 @@ export function LoginPage() {
 
   return (
     <div className="auth-page">
-      <div className="auth-left">
-        <div className="auth-brand">Contract Intelligence Platform</div>
-        <div>
-          <div className="auth-tagline">Structured contract negotiation and policy compliance.</div>
-          <p className="auth-tagline-sub">
-            Track revisions, attribute changes, and evaluate contractual language against your organisation's internal policies. All in one auditable environment.
-          </p>
-        </div>
-        <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.05em' }}>
-          DEMONSTRATION PRODUCT · NOT FOR PRODUCTION USE
-        </div>
-      </div>
+      <AuthLeft />
 
       <div className="auth-right" style={{ flexDirection: 'column', padding: 0, display: 'flex', height: '100vh', justifyContent: 'space-between' }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>

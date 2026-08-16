@@ -172,7 +172,7 @@ export function KnowledgeBasePage() {
                     <td><span className="badge badge-info">{doc.file_type.toUpperCase()}</span></td>
                     <td className="text-muted text-sm">{formatDate(doc.uploaded_at)}</td>
                     <td>
-                      <button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-red)' }} onClick={() => handleDelete(doc.id)}>
+                      <button className="btn btn-ghost btn-sm" style={{ border: '1px solid var(--color-red)', color: 'var(--color-red)' }} onClick={() => handleDelete(doc.id)}>
                         Remove
                       </button>
                     </td>
