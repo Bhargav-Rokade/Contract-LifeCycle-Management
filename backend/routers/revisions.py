@@ -40,6 +40,13 @@ async def upload_revision(
     if ext != 'docx':
         raise HTTPException(status_code=400, detail="Only DOCX files are supported for contract upload.")
         
+    original_name = file.filename
+    base_name = os.path.splitext(original_name)[0]
+    safe_base = "".join([c for c in base_name if c.isalnum() or c in ('-', '_')]).strip()
+    if not safe_base:
+        safe_base = "contract"
+    filename = f"{safe_base}.md"
+
     temp_dir = Path(deck.repository_path) / "temp"
     temp_dir.mkdir(exist_ok=True)
     
@@ -56,7 +63,7 @@ async def upload_revision(
     os.remove(temp_file)
     
     # Commit to Git
-    commit_hash = GitService.commit_revision(deck.id, md_text, current_company.display_name, commit_message)
+    commit_hash = GitService.commit_revision(deck.id, filename, md_text, current_company.display_name, commit_message)
     
     # Record in DB
     rev_id = str(uuid.uuid4())
@@ -64,6 +71,7 @@ async def upload_revision(
         id=rev_id,
         deck_id=deck.id,
         commit_hash=commit_hash,
+        filename=filename,
         author_company_id=current_company.id,
         commit_message=commit_message
     )
@@ -80,20 +88,33 @@ async def upload_revision(
     )
     return result.scalars().first()
 
+@router.get("/files", response_model=list[str])
+async def list_deck_files(
+    deck_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_company: Company = Depends(get_current_company)
+):
+    await get_deck_or_404(deck_id, db, current_company)
+    return GitService.get_files(deck_id)
+
 @router.get("", response_model=list[RevisionResponse])
 async def list_revisions(
     deck_id: str,
+    filename: str = None,
     db: AsyncSession = Depends(get_db),
     current_company: Company = Depends(get_current_company)
 ):
     deck = await get_deck_or_404(deck_id, db, current_company)
     
-    result = await db.execute(
+    query = (
         select(ContractRevision)
         .options(selectinload(ContractRevision.author_company))
         .filter(ContractRevision.deck_id == deck_id)
-        .order_by(ContractRevision.created_at.desc())
     )
+    if filename:
+        query = query.filter(ContractRevision.filename == filename)
+
+    result = await db.execute(query.order_by(ContractRevision.created_at.desc()))
     return result.scalars().all()
 
 @router.get("/{rev_id}/diff", response_model=DiffResponse)
@@ -113,19 +134,23 @@ async def get_revision_diff(
     if not rev:
         raise HTTPException(status_code=404, detail="Revision not found")
         
-    # Get previous revision chronologically
+    # Get previous revision chronologically that affects the SAME file
     prev_result = await db.execute(
         select(ContractRevision)
-        .filter(ContractRevision.deck_id == deck_id, ContractRevision.created_at < rev.created_at)
+        .filter(
+            ContractRevision.deck_id == deck_id, 
+            ContractRevision.filename == rev.filename,
+            ContractRevision.created_at < rev.created_at
+        )
         .order_by(ContractRevision.created_at.desc())
     )
     prev_rev = prev_result.scalars().first()
     
     prev_hash = prev_rev.commit_hash if prev_rev else None
     
-    diff_text = GitService.get_diff(deck.id, prev_hash, rev.commit_hash)
+    diff_text = GitService.get_diff(deck.id, rev.filename, prev_hash, rev.commit_hash)
     
-    # Simple segment parsing (just keeping the raw text for MVP frontend to display)
+    # Simple segment parsing
     segments = []
     for line in diff_text.split('\n'):
         if line.startswith('+') and not line.startswith('+++'):
@@ -146,6 +171,7 @@ async def get_revision_diff(
 @router.get("/latest/download")
 async def download_latest_revision(
     deck_id: str,
+    filename: str,
     db: AsyncSession = Depends(get_db),
     current_company: Company = Depends(get_current_company)
 ):
@@ -153,21 +179,22 @@ async def download_latest_revision(
     
     result = await db.execute(
         select(ContractRevision)
-        .filter(ContractRevision.deck_id == deck_id)
+        .filter(ContractRevision.deck_id == deck_id, ContractRevision.filename == filename)
         .order_by(ContractRevision.created_at.desc())
     )
     latest_rev = result.scalars().first()
     if not latest_rev:
-        raise HTTPException(status_code=404, detail="No revisions found")
+        raise HTTPException(status_code=404, detail=f"No revisions found for file {filename}")
         
-    md_content = GitService.get_content_at(deck.id, latest_rev.commit_hash)
+    md_content = GitService.get_content_at(deck.id, filename, latest_rev.commit_hash)
     if not md_content:
         raise HTTPException(status_code=404, detail="Contract content empty")
         
     exports_dir = Path(deck.repository_path) / "exports"
     exports_dir.mkdir(exist_ok=True)
     
-    docx_path = exports_dir / f"contract_{latest_rev.commit_hash[:7]}.docx"
+    export_base = os.path.splitext(filename)[0]
+    docx_path = exports_dir / f"{export_base}_{latest_rev.commit_hash[:7]}.docx"
     
     if not docx_path.exists():
         try:
@@ -177,6 +204,6 @@ async def download_latest_revision(
             
     return FileResponse(
         path=docx_path,
-        filename=f"{deck.title.replace(' ', '_')}_latest.docx",
+        filename=f"{export_base}_latest.docx",
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )

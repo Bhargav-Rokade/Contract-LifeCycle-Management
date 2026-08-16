@@ -47,17 +47,21 @@ async def run_compliance_review(
     if existing:
         return existing # Return existing findings if already run
 
-    # Get prev revision
+    # Get prev revision affecting the SAME file
     result_prev = await db.execute(
         select(ContractRevision)
-        .filter(ContractRevision.deck_id == deck_id, ContractRevision.created_at < rev.created_at)
+        .filter(
+            ContractRevision.deck_id == deck_id,
+            ContractRevision.filename == rev.filename,
+            ContractRevision.created_at < rev.created_at
+        )
         .order_by(ContractRevision.created_at.desc())
     )
     prev_rev = result_prev.scalars().first()
     prev_hash = prev_rev.commit_hash if prev_rev else None
 
-    # Get diff
-    diff_text = GitService.get_diff(deck.id, prev_hash, rev.commit_hash)
+    # Get diff specifically for this file
+    diff_text = GitService.get_diff(deck.id, rev.filename, prev_hash, rev.commit_hash)
     
     # Run analysis
     findings_data = await ComplianceService.review_revision(current_company.company_handle, diff_text)

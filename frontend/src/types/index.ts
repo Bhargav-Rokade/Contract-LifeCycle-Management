@@ -33,6 +33,7 @@ export interface ContractRevision {
   id: string;
   deck_id: string;
   commit_hash: string;
+  filename: string;
   author_company: Company;
   commit_message: string;
   created_at: string;

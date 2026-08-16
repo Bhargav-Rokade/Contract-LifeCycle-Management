@@ -18,8 +18,15 @@ async def lifespan(app: FastAPI):
     init_directories()
     
     logger.info("Initializing database schema...")
+    from sqlalchemy import text
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        try:
+            # Raw SQL migration to add 'filename' column if it doesn't exist
+            await conn.execute(text("ALTER TABLE contract_revisions ADD COLUMN filename VARCHAR DEFAULT 'contract.md';"))
+            logger.info("Migration: Added 'filename' column to contract_revisions")
+        except Exception as e:
+            logger.info(f"Migration skipped or already applied: {e}")
         
     logger.info("Startup complete.")
     yield

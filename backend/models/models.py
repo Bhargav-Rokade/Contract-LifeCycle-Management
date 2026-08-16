@@ -60,6 +60,7 @@ class ContractRevision(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     deck_id: Mapped[str] = mapped_column(String, ForeignKey("negotiation_decks.id", ondelete="CASCADE"))
     commit_hash: Mapped[str] = mapped_column(String)
+    filename: Mapped[str] = mapped_column(String, default="contract.md", server_default="contract.md")
     author_company_id: Mapped[str] = mapped_column(String, ForeignKey("companies.id"))
     commit_message: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

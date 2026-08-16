@@ -24,6 +24,13 @@ export function NegotiationDeckPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [deck, setDeck] = useState<NegotiationDeck | null>(null);
+
+  // Files support
+  const [files, setFiles] = useState<string[]>([]);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [loadingFiles, setLoadingFiles] = useState(true);
+
+  // Revisions & analysis
   const [revisions, setRevisions] = useState<ContractRevision[]>([]);
   const [selectedRev, setSelectedRev] = useState<ContractRevision | null>(null);
   const [diff, setDiff] = useState<DiffResponse | null>(null);
@@ -37,12 +44,27 @@ export function NegotiationDeckPage() {
   const [showUpload, setShowUpload] = useState(false);
   const [error, setError] = useState('');
 
-  const fetchRevisions = () => {
+  const fetchFiles = async () => {
     if (!deckId) return;
-    revisionsApi.list(deckId).then(res => {
+    setLoadingFiles(true);
+    try {
+      const res = await revisionsApi.listFiles(deckId);
+      setFiles(res.data);
+    } catch (e) {
+      console.error('Failed to fetch files list', e);
+    } finally {
+      setLoadingFiles(false);
+    }
+  };
+
+  const fetchRevisions = (filename: string) => {
+    if (!deckId) return;
+    revisionsApi.list(deckId, filename).then(res => {
       setRevisions(res.data);
-      if (res.data.length > 0 && !selectedRev) {
+      if (res.data.length > 0) {
         selectRevision(res.data[0]);
+      } else {
+        setSelectedRev(null);
       }
     });
   };
@@ -57,8 +79,13 @@ export function NegotiationDeckPage() {
       setDeck(res.data);
       document.title = `Negotiation Deck: ${res.data.title} - Contract Manager App`;
     });
-    fetchRevisions();
+    fetchFiles();
   }, [deckId]);
+
+  const selectFile = (filename: string) => {
+    setSelectedFile(filename);
+    fetchRevisions(filename);
+  };
 
   const selectRevision = async (rev: ContractRevision) => {
     setSelectedRev(rev);
@@ -80,13 +107,46 @@ export function NegotiationDeckPage() {
 
   const handleUpload = async (file: File) => {
     if (!deckId) return;
+    const parts = file.name.split('.');
+    const ext = parts.pop()?.toLowerCase();
+    if (ext !== 'docx') {
+      setError('Only DOCX files are supported for contract upload.');
+      return;
+    }
+
+    const baseName = parts.join('.');
+    const cleanBaseName = baseName.toLowerCase().replace(/[^a-z0-9-_]/g, '').trim();
+    const mdFilename = `${cleanBaseName || 'contract'}.md`;
+
+    if (selectedFile) {
+      // 1. Inside File View: verify filename matches current file
+      const targetBase = selectedFile.slice(0, -3); // remove '.md'
+      if (cleanBaseName !== targetBase.toLowerCase().replace(/[^a-z0-9-_]/g, '')) {
+        alert(`Warning: The uploaded filename (${file.name}) does not match the active file (${selectedFile}). Upload blocked.`);
+        return;
+      }
+    } else {
+      // 2. Inside List View: check for duplicate name warning
+      if (files.includes(mdFilename)) {
+        const confirmUpdate = window.confirm(`This will update the existing file "${mdFilename}" as it has the same name. Do you want to proceed?`);
+        if (!confirmUpdate) return;
+      }
+    }
+
     setUploading(true);
     setError('');
     try {
-      await revisionsApi.upload(deckId, file, commitMessage || 'Uploaded revised contract');
+      await revisionsApi.upload(deckId, file, commitMessage || `Uploaded revised ${file.name}`);
       setShowUpload(false);
       setCommitMessage('');
-      fetchRevisions();
+
+      if (selectedFile) {
+        fetchRevisions(selectedFile);
+      } else {
+        await fetchFiles();
+        // Auto-select the newly uploaded or updated file
+        selectFile(mdFilename);
+      }
     } catch (e: any) {
       setError(e?.response?.data?.detail ?? 'Upload failed.');
     } finally {
@@ -110,14 +170,14 @@ export function NegotiationDeckPage() {
   };
 
   const handleDownload = async () => {
-    if (!deckId) return;
+    if (!deckId || !selectedFile) return;
     setDownloading(true);
     try {
-      const res = await revisionsApi.downloadLatest(deckId);
+      const res = await revisionsApi.downloadLatest(deckId, selectedFile);
       const url = URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${deck?.title.replace(/\s/g, '_')}_latest.docx`;
+      a.download = `${selectedFile.replace('.md', '')}_latest.docx`;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -134,12 +194,16 @@ export function NegotiationDeckPage() {
       {/* Top bar */}
       <div style={{ padding: '16px 32px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
         <div className="flex items-center gap-4">
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/dashboard')} style={{ color: 'var(--color-ink-3)' }}>
-            ← Back
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => selectedFile ? setSelectedFile(null) : navigate('/dashboard')}
+            style={{ color: 'var(--color-ink-3)' }}
+          >
+            ← {selectedFile ? 'Back to Files' : 'Back to Dashboard'}
           </button>
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.95rem' }}>
-              {deck?.title ?? '…'}
+              {deck?.title ?? '…'} {selectedFile && <span style={{ color: 'var(--color-accent-text)' }}> / {selectedFile}</span>}
             </div>
             {counterparty && (
               <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-3)' }}>
@@ -150,13 +214,13 @@ export function NegotiationDeckPage() {
         </div>
 
         <div className="flex gap-3">
-          {revisions.length > 0 && (
+          {selectedFile && revisions.length > 0 && (
             <button id="download-docx-btn" className="btn btn-outline btn-sm" onClick={handleDownload} disabled={downloading}>
               {downloading ? <span className="loading-spinner loading-spinner-dark" /> : '↓ Download DOCX'}
             </button>
           )}
           <button id="upload-revision-btn" className="btn btn-primary btn-sm" onClick={() => setShowUpload(v => !v)}>
-            ↑ Upload Revision
+            {selectedFile ? '↑ Upload Revision' : '+ Add Document'}
           </button>
         </div>
       </div>
@@ -168,7 +232,7 @@ export function NegotiationDeckPage() {
             <input
               className="form-input"
               type="text"
-              placeholder="Revision note (optional)"
+              placeholder={selectedFile ? 'Revision note (optional)' : 'Document note (optional)'}
               value={commitMessage}
               onChange={e => setCommitMessage(e.target.value)}
               style={{ width: '320px' }}
@@ -183,110 +247,163 @@ export function NegotiationDeckPage() {
         </div>
       )}
 
-      {/* Body: sidebar + content */}
-      <div className="deck-layout" style={{ height: `calc(100vh - ${showUpload ? '146px' : '88px'})` }}>
-        {/* Revision sidebar */}
-        <div className="deck-sidebar">
-          <div className="deck-sidebar-header">Revision History ({revisions.length})</div>
-          {revisions.length === 0 ? (
-            <div className="empty-state" style={{ padding: '40px 16px' }}>
-              <div className="empty-state-icon" style={{ fontSize: '1.4rem' }}>○</div>
-              <div className="empty-state-title" style={{ fontSize: '0.85rem' }}>No revisions yet</div>
-              <div className="empty-state-body" style={{ fontSize: '0.78rem' }}>Upload the first draft to begin tracking.</div>
+      {/* Main Body */}
+      {selectedFile === null ? (
+        /* LIST VIEW OF FILES */
+        <div className="page-body">
+          <div className="card-header" style={{ border: '1px solid var(--color-border)', borderBottom: 'none', background: 'var(--color-surface)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="card-title">Documents in Negotiation ({files.length})</span>
+          </div>
+          {loadingFiles ? (
+            <div className="empty-state"><span className="loading-spinner loading-spinner-dark" /></div>
+          ) : files.length === 0 ? (
+            <div className="empty-state" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderTop: 'none' }}>
+              <div className="empty-state-icon">⊞</div>
+              <div className="empty-state-title">No documents uploaded yet</div>
+              <div className="empty-state-body">
+                Upload the first contract document (like SOW, NDA, or MSA) in DOCX format to start negotiations.
+              </div>
+              <button className="btn btn-primary" onClick={() => setShowUpload(true)}>
+                Upload Document
+              </button>
             </div>
           ) : (
-            <div className="timeline" style={{ padding: '8px' }}>
-              {revisions.map((rev, idx) => (
-                <div
-                  key={rev.id}
-                  className={`timeline-item ${selectedRev?.id === rev.id ? 'selected' : ''}`}
-                  onClick={() => selectRevision(rev)}
-                >
-                  <div className="timeline-dot" />
-                  <div style={{ minWidth: 0 }}>
-                    <div className="timeline-message" style={{ fontSize: '0.8rem' }}>
-                      {rev.commit_message}
+            <div className="card" style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>File Name</th>
+                    <th>Format</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {files.map(filename => (
+                    <tr key={filename} style={{ cursor: 'pointer' }} onClick={() => selectFile(filename)}>
+                      <td>
+                        <span style={{ fontWeight: 500, color: 'var(--color-ink)' }}>{filename}</span>
+                      </td>
+                      <td>
+                        <span className="badge badge-info">MARKDOWN</span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button className="btn btn-outline btn-sm" onClick={(e) => { e.stopPropagation(); selectFile(filename); }}>
+                          Open Workspace &rarr;
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* WORKSPACE FOR THE SELECTED FILE */
+        <div className="deck-layout" style={{ height: `calc(100vh - ${showUpload ? '146px' : '88px'})` }}>
+          {/* Revision sidebar */}
+          <div className="deck-sidebar">
+            <div className="deck-sidebar-header">Revision History ({revisions.length})</div>
+            {revisions.length === 0 ? (
+              <div className="empty-state" style={{ padding: '40px 16px' }}>
+                <div className="empty-state-icon" style={{ fontSize: '1.4rem' }}>○</div>
+                <div className="empty-state-title" style={{ fontSize: '0.85rem' }}>No revisions yet</div>
+                <div className="empty-state-body" style={{ fontSize: '0.78rem' }}>Upload the first draft to begin tracking.</div>
+              </div>
+            ) : (
+              <div className="timeline" style={{ padding: '8px' }}>
+                {revisions.map((rev, idx) => (
+                  <div
+                    key={rev.id}
+                    className={`timeline-item ${selectedRev?.id === rev.id ? 'selected' : ''}`}
+                    onClick={() => selectRevision(rev)}
+                  >
+                    <div className="timeline-dot" />
+                    <div style={{ minWidth: 0 }}>
+                      <div className="timeline-message" style={{ fontSize: '0.8rem' }}>
+                        {rev.commit_message}
+                      </div>
+                      <div className="timeline-author">@{rev.author_company.company_handle}</div>
+                      <div className="timeline-meta">{timeAgo(rev.created_at)}</div>
+                      {idx === 0 && (
+                        <span className="badge badge-aligned" style={{ marginTop: '4px', fontSize: '0.65rem', padding: '2px 6px' }}>Latest</span>
+                      )}
                     </div>
-                    <div className="timeline-author">@{rev.author_company.company_handle}</div>
-                    <div className="timeline-meta">{timeAgo(rev.created_at)}</div>
-                    {idx === 0 && (
-                      <span className="badge badge-aligned" style={{ marginTop: '4px', fontSize: '0.65rem', padding: '2px 6px' }}>Latest</span>
-                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Workspace content */}
+          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {selectedRev ? (
+              <>
+                {/* Tabs */}
+                <div className="deck-tabs">
+                  <button className={`deck-tab ${activeTab === 'diff' ? 'active' : ''}`} onClick={() => setActiveTab('diff')}>
+                    Changes
+                  </button>
+                  <button className={`deck-tab ${activeTab === 'compliance' ? 'active' : ''}`} onClick={() => setActiveTab('compliance')}>
+                    Compliance {findings.length > 0 && <span className="badge badge-conflict" style={{ marginLeft: '6px', fontSize: '0.65rem', padding: '1px 6px' }}>{findings.length}</span>}
+                  </button>
+                  <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', paddingRight: '16px' }}>
+                    <button
+                      id="run-compliance-btn"
+                      className="btn btn-outline btn-sm"
+                      onClick={handleRunCompliance}
+                      disabled={runningCompliance}
+                      style={{ fontSize: '0.78rem' }}
+                    >
+                      {runningCompliance ? <><span className="loading-spinner loading-spinner-dark" /> Analysing…</> : '⊕ Run Compliance Review'}
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
 
-        {/* Main content */}
-        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {selectedRev ? (
-            <>
-              {/* Tabs */}
-              <div className="deck-tabs">
-                <button className={`deck-tab ${activeTab === 'diff' ? 'active' : ''}`} onClick={() => setActiveTab('diff')}>
-                  Changes
-                </button>
-                <button className={`deck-tab ${activeTab === 'compliance' ? 'active' : ''}`} onClick={() => setActiveTab('compliance')}>
-                  Compliance {findings.length > 0 && <span className="badge badge-conflict" style={{ marginLeft: '6px', fontSize: '0.65rem', padding: '1px 6px' }}>{findings.length}</span>}
-                </button>
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', paddingRight: '16px' }}>
-                  <button
-                    id="run-compliance-btn"
-                    className="btn btn-outline btn-sm"
-                    onClick={handleRunCompliance}
-                    disabled={runningCompliance}
-                    style={{ fontSize: '0.78rem' }}
-                  >
-                    {runningCompliance ? <><span className="loading-spinner loading-spinner-dark" /> Analysing…</> : '⊕ Run Compliance Review'}
-                  </button>
-                </div>
-              </div>
+                <div className="deck-main">
+                  {activeTab === 'diff' && (
+                    <>
+                      <div style={{ marginBottom: '12px', fontSize: '0.78rem', color: 'var(--color-ink-3)' }}>
+                        Showing changes introduced in revision <span className="font-mono">{selectedRev.commit_hash.slice(0, 7)}</span> by <span className="font-mono">@{selectedRev.author_company.company_handle}</span>
+                      </div>
+                      {loadingDiff ? (
+                        <div className="empty-state"><span className="loading-spinner loading-spinner-dark" /></div>
+                      ) : diff ? (
+                        <DiffViewer diff={diff} />
+                      ) : null}
+                    </>
+                  )}
 
-              <div className="deck-main">
-                {activeTab === 'diff' && (
-                  <>
-                    <div style={{ marginBottom: '12px', fontSize: '0.78rem', color: 'var(--color-ink-3)' }}>
-                      Showing changes introduced in revision <span className="font-mono">{selectedRev.commit_hash.slice(0, 7)}</span> by <span className="font-mono">@{selectedRev.author_company.company_handle}</span>
-                    </div>
-                    {loadingDiff ? (
-                      <div className="empty-state"><span className="loading-spinner loading-spinner-dark" /></div>
-                    ) : diff ? (
-                      <DiffViewer diff={diff} />
-                    ) : null}
-                  </>
-                )}
-
-                {activeTab === 'compliance' && (
-                  <>
-                    {error && <div className="alert alert-error mb-4">{error}</div>}
-                    {findings.length === 0 ? (
-                      <div className="empty-state">
-                        <div className="empty-state-icon">⊞</div>
-                        <div className="empty-state-title">No compliance findings</div>
-                        <div className="empty-state-body">
-                          Run a compliance review to evaluate this revision against your knowledge base.
+                  {activeTab === 'compliance' && (
+                    <>
+                      {error && <div className="alert alert-error mb-4">{error}</div>}
+                      {findings.length === 0 ? (
+                        <div className="empty-state">
+                          <div className="empty-state-icon">⊞</div>
+                          <div className="empty-state-title">No compliance findings</div>
+                          <div className="empty-state-body">
+                            Run a compliance review to evaluate this revision against your knowledge base.
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-4">
-                        {findings.map(f => <ComplianceFindingCard key={f.id} finding={f} />)}
-                      </div>
-                    )}
-                  </>
-                )}
+                      ) : (
+                        <div className="flex flex-col gap-4">
+                          {findings.map(f => <ComplianceFindingCard key={f.id} finding={f} />)}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="empty-state" style={{ flex: 1 }}>
+                <div className="empty-state-icon">⇌</div>
+                <div className="empty-state-title">Select a revision</div>
+                <div className="empty-state-body">Choose a revision from the history panel to view changes and run compliance checks.</div>
               </div>
-            </>
-          ) : (
-            <div className="empty-state" style={{ flex: 1 }}>
-              <div className="empty-state-icon">⇌</div>
-              <div className="empty-state-title">Select a revision</div>
-              <div className="empty-state-body">Choose a revision from the history panel to view changes and run compliance checks.</div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </Layout>
   );
 }

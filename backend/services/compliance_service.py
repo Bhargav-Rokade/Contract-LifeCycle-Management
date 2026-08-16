@@ -117,9 +117,6 @@ class ComplianceService:
             
             result_text = response.choices[0].message.content
             finding = json.loads(result_text)
-            
-            if finding.get('finding_type') == 'no_finding':
-                return None
                 
             return finding
             
