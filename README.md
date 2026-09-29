@@ -1,5 +1,6 @@
 # Contract Intelligence Platform
 
+- Reconsidering writing this in  ASD-STE100 Simplified Technical English (STE)
 This is a platform designed for organizations that frequently exchange and revise legal agreements. It provides a structured environment where two organizations can negotiate a contract, maintain an immutable Git-backed version history of revisions, and automatically evaluate contractual changes against their own internal policy knowledge base using AI.
 
 ## Key Features

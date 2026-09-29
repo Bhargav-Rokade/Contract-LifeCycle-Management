@@ -32,3 +32,11 @@ This document outlines the foundational decisions that guide the technical imple
 ## 6. Frontend Aesthetics
 **Decision:** Vanilla CSS with strict tokens, no TailwindCSS, no glassmorphism.
 **Rationale:** Legal software requires high legibility, trust, and formality. The UI enforces a tight, less-rounded design system (`border-radius: 3px/5px`) utilizing the fonts `Syne` (for formal display headers) and `Figtree` (for clean, readable body text). Colors are restricted to ink blacks, parchment whites, and a highly specific forest green accent to convey stability and professionalism.
+
+## 7. Multi-File Negotiation Support
+**Decision:** Design the repository architecture and database schema to negotiate multiple files (`NDA.md`, `MSA.md`, `SOW.md`) concurrently inside a single deck, rather than a single hardcoded `contract.md`.
+**Rationale:** Real negotiations often involve package deals containing separate agreements. By tracking a `filename` attribute in the `ContractRevision` record and querying Git history tree paths dynamically, the platform enables granular version tracking, diffs, and compliance checks on a per-file basis within the same Git workspace.
+
+## 8. Server-Driven SQL DDL Auto-Migration
+**Decision:** Execute raw SQL migration checks (`ALTER TABLE ... ADD COLUMN ...`) wrapped in SQLAlchemy's `text()` construct inside the FastAPI lifespan startup context.
+**Rationale:** SQLite is updated dynamically without formal migration engines (like Alembic) to preserve the zero-overhead developer setup. Executing checks safely at boot avoids manual schema updates and guarantees backward compatibility for users running pre-existing database instances.
