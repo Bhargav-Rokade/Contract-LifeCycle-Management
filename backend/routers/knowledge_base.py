@@ -9,7 +9,7 @@ from sqlalchemy.future import select
 
 from backend.database import get_db
 from backend.models.models import Company, KnowledgeBase, KnowledgeBaseDocument
-from backend.schemas.schemas import KBDocumentResponse, KBStatusResponse
+from backend.schemas.schemas import KBDocumentResponse, KBStatusResponse, DocumentContentResponse
 from backend.services.auth_service import get_current_company
 from backend.services.doc_conversion import DocConversionService
 from backend.services.embedding_service import EmbeddingService
@@ -166,3 +166,30 @@ async def get_kb_status(
         last_rebuild_at=kb.last_rebuild_at,
         document_count=len(docs)
     )
+
+@router.get("/documents/{doc_id}/content", response_model=DocumentContentResponse)
+async def get_document_content(
+    doc_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_company: Company = Depends(get_current_company)
+):
+    result = await db.execute(
+        select(KnowledgeBaseDocument)
+        .join(KnowledgeBase)
+        .filter(KnowledgeBaseDocument.id == doc_id, KnowledgeBase.company_id == current_company.id)
+    )
+    doc = result.scalars().first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    _, md_dir = get_company_dirs(current_company.company_handle)
+    md_path = md_dir / f"{doc.file_name}.md"
+    
+    if not md_path.exists():
+        raise HTTPException(status_code=404, detail="Processed content not found")
+        
+    with open(md_path, "r", encoding="utf-8") as f:
+        content = f.read()
+        
+    return DocumentContentResponse(content=content, file_name=doc.file_name)
+

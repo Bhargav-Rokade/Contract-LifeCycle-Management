@@ -8,6 +8,7 @@ import { revisionsApi } from '../api/revisions';
 import { complianceApi } from '../api/compliance';
 import type { NegotiationDeck, ContractRevision, DiffResponse, ComplianceFinding } from '../types';
 import { useAuthStore } from '../store/authStore';
+import { DocPreviewModal } from '../components/DocPreviewModal';
 
 function timeAgo(iso: string) {
   const d = new Date(iso);
@@ -43,6 +44,7 @@ export function NegotiationDeckPage() {
   const [commitMessage, setCommitMessage] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [error, setError] = useState('');
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const fetchFiles = async () => {
     if (!deckId) return;
@@ -196,7 +198,7 @@ export function NegotiationDeckPage() {
         <div className="flex items-center gap-4">
           <button
             className="btn btn-ghost btn-sm"
-            onClick={() => selectedFile ? setSelectedFile(null) : navigate('/dashboard')}
+            onClick={() => selectedFile ? setSelectedFile(null) : navigate('/negotiations')}
             style={{ color: 'var(--color-ink-3)' }}
           >
             ← {selectedFile ? 'Back to Files' : 'Back to Dashboard'}
@@ -347,7 +349,14 @@ export function NegotiationDeckPage() {
                   <button className={`deck-tab ${activeTab === 'compliance' ? 'active' : ''}`} onClick={() => setActiveTab('compliance')}>
                     Compliance {findings.length > 0 && <span className="badge badge-conflict" style={{ marginLeft: '6px', fontSize: '0.65rem', padding: '1px 6px' }}>{findings.length}</span>}
                   </button>
-                  <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', paddingRight: '16px' }}>
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center', paddingRight: '16px' }}>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => setPreviewOpen(true)}
+                      style={{ fontSize: '0.78rem' }}
+                    >
+                      View Document
+                    </button>
                     <button
                       id="run-compliance-btn"
                       className="btn btn-primary btn-sm"
@@ -403,6 +412,17 @@ export function NegotiationDeckPage() {
             )}
           </div>
         </div>
+      )}
+      {selectedRev && (
+        <DocPreviewModal
+          isOpen={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          title={`View Document: ${selectedRev.filename} (Revision ${selectedRev.commit_hash.slice(0, 7)})`}
+          fetchContent={async () => {
+            const res = await revisionsApi.getRevisionContent(deckId!, selectedRev.id);
+            return res.data.content;
+          }}
+        />
       )}
     </Layout>
   );

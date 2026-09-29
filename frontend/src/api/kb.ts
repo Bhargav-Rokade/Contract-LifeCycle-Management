@@ -21,4 +21,7 @@ export const kbApi = {
 
   status: () =>
     apiClient.get<KBStatus>('/api/kb/status'),
+
+  getDocumentContent: (docId: string) =>
+    apiClient.get<{ content: string; file_name: string }>(`/api/kb/documents/${docId}/content`),
 };

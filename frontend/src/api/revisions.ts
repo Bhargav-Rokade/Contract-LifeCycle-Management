@@ -31,4 +31,7 @@ export const revisionsApi = {
       params: { filename },
       responseType: 'blob',
     }),
+
+  getRevisionContent: (deckId: string, revId: string) =>
+    apiClient.get<{ content: string; file_name: string }>(`/api/negotiations/${deckId}/revisions/${revId}/content`),
 };

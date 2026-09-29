@@ -105,3 +105,10 @@ class ComplianceFindingResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Preview Schemas
+class DocumentContentResponse(BaseModel):
+    content: str
+    file_name: str
+

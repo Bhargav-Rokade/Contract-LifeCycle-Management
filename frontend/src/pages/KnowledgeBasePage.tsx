@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Layout } from '../components/Layout';
 import { kbApi } from '../api/kb';
 import type { KBDocument, KBStatus } from '../types';
+import { DocPreviewModal } from '../components/DocPreviewModal';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -15,6 +16,8 @@ export function KnowledgeBasePage() {
   const [rebuilding, setRebuilding] = useState(false);
   const [rebuildResult, setRebuildResult] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [previewDoc, setPreviewDoc] = useState<KBDocument | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchAll = () => {
@@ -172,6 +175,13 @@ export function KnowledgeBasePage() {
                     <td><span className="badge badge-info">{doc.file_type.toUpperCase()}</span></td>
                     <td className="text-muted text-sm">{formatDate(doc.uploaded_at)}</td>
                     <td>
+                      <button 
+                        className="btn btn-ghost btn-sm" 
+                        style={{ border: '1px solid var(--color-accent)', color: 'var(--color-accent)', marginRight: '8px' }} 
+                        onClick={() => { setPreviewDoc(doc); setPreviewOpen(true); }}
+                      >
+                        Preview
+                      </button>
                       <button className="btn btn-ghost btn-sm" style={{ border: '1px solid var(--color-red)', color: 'var(--color-red)' }} onClick={() => handleDelete(doc.id)}>
                         Remove
                       </button>
@@ -183,6 +193,17 @@ export function KnowledgeBasePage() {
           )}
         </div>
       </div>
+      {previewDoc && (
+        <DocPreviewModal
+          isOpen={previewOpen}
+          onClose={() => { setPreviewOpen(false); setPreviewDoc(null); }}
+          title={`Preview: ${previewDoc.file_name}`}
+          fetchContent={async () => {
+            const res = await kbApi.getDocumentContent(previewDoc.id);
+            return res.data.content;
+          }}
+        />
+      )}
     </Layout>
   );
 }

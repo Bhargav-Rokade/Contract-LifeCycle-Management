@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from backend.database import get_db
 from backend.models.models import Company, NegotiationDeck, ContractRevision
-from backend.schemas.schemas import RevisionResponse, DiffResponse, DiffSegment
+from backend.schemas.schemas import RevisionResponse, DiffResponse, DiffSegment, DocumentContentResponse
 from backend.services.auth_service import get_current_company
 from backend.services.doc_conversion import DocConversionService
 from backend.services.git_service import GitService
@@ -207,3 +207,27 @@ async def download_latest_revision(
         filename=f"{export_base}_latest.docx",
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
+@router.get("/{rev_id}/content", response_model=DocumentContentResponse)
+async def get_revision_content(
+    deck_id: str,
+    rev_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_company: Company = Depends(get_current_company)
+):
+    deck = await get_deck_or_404(deck_id, db, current_company)
+    
+    result = await db.execute(
+        select(ContractRevision)
+        .filter(ContractRevision.id == rev_id, ContractRevision.deck_id == deck_id)
+    )
+    rev = result.scalars().first()
+    if not rev:
+        raise HTTPException(status_code=404, detail="Revision not found")
+        
+    md_content = GitService.get_content_at(deck.id, rev.filename, rev.commit_hash)
+    if not md_content:
+        raise HTTPException(status_code=404, detail="Content not found or empty")
+        
+    return DocumentContentResponse(content=md_content, file_name=rev.filename)
+
